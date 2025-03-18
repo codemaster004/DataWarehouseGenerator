@@ -1,0 +1,29 @@
+tables:
+  Users:
+    path: "data/users.csv"
+    pk: "Email"
+    fields:
+      Email:
+        generator: "email"
+        unique: true
+      Name:
+        generator: "name"
+      Surname:
+        generator: "surname"
+      PassHash:
+        generator: "hash"
+      PhoneNumber:
+        generator: "number"
+        unique: true
+        range: [ 100_000_000, 999_999_999 ]
+      IsActive:
+        generator: "choice"
+        values: [ "active", "inactive", "notVerified" ]
+        weights: [ 0.9, 0.0, 0.1 ]
+      IsStaff:
+        generator: "choice"
+        values: [ true, false ]
+        weights: [ 0, 1 ]
+      BirthDate:
+        generator: "date"
+        range: ["01-01-2023", "18-03-2024"]
