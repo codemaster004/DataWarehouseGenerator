@@ -2,7 +2,7 @@ import random
 
 import yaml
 
-with open("../config.yml", "r") as ymlfile:
+with open("../configs/tables.yml", "r") as ymlfile:
 	config = yaml.safe_load(ymlfile)
 
 print(config.get('tables', {}))

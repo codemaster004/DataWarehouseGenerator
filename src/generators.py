@@ -6,7 +6,7 @@ class Generator:
 	def __init__(self):
 		pass
 	
-	def get_random(self, **kwargs):
+	def get_random(self, conf_options: dict):
 		pass
 
 
@@ -14,7 +14,7 @@ class EmailGen(Generator):
 	def __init__(self):
 		super().__init__()
 	
-	def get_random(self, **kwargs):
+	def get_random(self, conf_options: dict):
 		email = 'DW'
 		
 		r_name = ''.join([chr(random.randint(65, 123)) for _ in range(random.randint(8, 16))])
@@ -29,7 +29,7 @@ class NameGen(Generator):
 	def __init__(self):
 		super().__init__()
 	
-	def get_random(self, **kwargs):
+	def get_random(self, conf_options: dict):
 		names = ['Steve', 'Alex']
 		return random.choice(names)
 
@@ -38,7 +38,7 @@ class SurnameGen(Generator):
 	def __init__(self):
 		super().__init__()
 	
-	def get_random(self, **kwargs):
+	def get_random(self, conf_options: dict):
 		surnames = ['Kowalski', 'Bond']
 		return random.choice(surnames)
 
@@ -47,7 +47,7 @@ class HashGen(Generator):
 	def __init__(self):
 		super().__init__()
 	
-	def get_random(self, **kwargs):
+	def get_random(self, conf_options: dict):
 		password = ''.join([chr(random.randint(65, 123)) for _ in range(random.randint(8, 16))])
 		return hashlib.sha256(password.encode()).hexdigest()
 
@@ -56,8 +56,8 @@ class NumberGen(Generator):
 	def __init__(self):
 		super().__init__()
 	
-	def get_random(self, **kwargs):
-		range_ = kwargs.get('range', [0, 100])
+	def get_random(self, conf_options: dict):
+		range_ = conf_options.get('range', [0, 100])
 		return random.randint(*range_)
 
 
@@ -65,5 +65,26 @@ class ChoiceGen(Generator):
 	def __init__(self):
 		super().__init__()
 	
-	def get_random(self, **kwargs):
-		pass
+	def get_random(self, conf_options: dict):
+		return random.choices(conf_options.get('values', [None]), weights=conf_options.get('weights', [1]), k=1)[0]
+
+
+GENERATORS = {
+	"email": EmailGen,
+	"name": NameGen,
+	"surname": SurnameGen,
+	"hash": HashGen,
+	"number": NumberGen,
+	"choice": ChoiceGen,
+}
+
+
+def create_new_instance(table_conf: dict):
+	new_row = []
+	for field, options in table_conf['fields'].items():
+		generator = GENERATORS.get(options['generator'])
+		new_row.append(generator.get_random(options))
+
+
+if __name__ == '__main__':
+	create_new_instance()
