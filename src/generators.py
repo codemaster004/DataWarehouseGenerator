@@ -1,6 +1,8 @@
 import random
 import hashlib
 from datetime import datetime, timedelta
+
+import pandas
 import yaml
 
 
@@ -68,7 +70,11 @@ class ChoiceGen(Generator):
 		super().__init__()
 	
 	def get_random(self, conf_options: dict):
-		return random.choices(conf_options.get('values', [None]), weights=conf_options.get('weights', [1]), k=1)[0]
+		if 'weights' in conf_options:
+			result = random.choices(conf_options.get('values', [None]), weights=conf_options['weights'], k=1)[0]
+		else:
+			result = random.choice(conf_options.get('values', [None]))
+		return result
 
 
 class DateGen(Generator):
@@ -96,16 +102,50 @@ GENERATORS = {
 }
 
 
-def create_new_instance(table_conf: dict):
-	new_row = []
-	for field, options in table_conf['fields'].items():
+def create_new_instance(ins_conf: dict, variant: str | None, references: dict | None) -> dict:
+	new_ins = {}
+	for field, options in ins_conf['fields'].items():
+		if variant is not None:
+			options.update(ins_conf['variants'][variant].get(field, {}))
+		
+		if 'reference' in options:
+			entity, attribute = options['reference'].split('+')
+			new_ins[field] = references[entity][attribute]  # todo: try catch...
+			continue
+		
 		generator = GENERATORS.get(options['generator'])()
-		new_row.append(generator.get_random(options))
-	return new_row
+		new_ins[field] = generator.get_random(options)
+	return new_ins
+
+
+def handle_unique_values(population: pandas.DataFrame, new_instance: dict, table_conf: dict) -> dict:
+	return new_instance  # todo: implement
+
+
+def add_instance_to_population(
+		population: pandas.DataFrame,
+		instance_conf: dict,
+		variant: str = None,
+		ref_entities: dict = None
+) -> dict:
+	dependencies = instance_conf.get('dependsOn', [])
+	if dependencies and ref_entities is None:
+		print("WARNING: No references specified")
+		return {}
+	for dependency in dependencies:
+		if dependency not in ref_entities:
+			print(f"WARNING: Dependency '{dependency}' not found")
+			return {}
+	new_instance = create_new_instance(instance_conf, variant=variant, references=ref_entities)
+	new_instance = handle_unique_values(population, new_instance, instance_conf)
+	population.loc[len(population)] = new_instance
+	return new_instance
 
 
 if __name__ == '__main__':
 	with open("../configs/entities.yml", 'r') as ymlfile:
 		config = yaml.safe_load(ymlfile)
-	ins = create_new_instance(config.get("entities").get("Users"))
+	ins = create_new_instance(config.get("entities").get("User"), None, None)
+	print(ins)
+	ins = create_new_instance(config.get("entities").get("User"), variant='Users', references=None)
 	print(ins)
