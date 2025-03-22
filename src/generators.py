@@ -1,5 +1,7 @@
 import random
 import hashlib
+from datetime import datetime, timedelta
+import yaml
 
 
 class Generator:
@@ -69,6 +71,20 @@ class ChoiceGen(Generator):
 		return random.choices(conf_options.get('values', [None]), weights=conf_options.get('weights', [1]), k=1)[0]
 
 
+class DateGen(Generator):
+	def __init__(self):
+		super().__init__()
+	
+	def get_random(self, conf_options: dict):
+		start_date, end_date = conf_options.get('range', ["01-01-2023", "18-03-2024"])
+		start_date = datetime.strptime(start_date, "%d-%m-%Y")
+		end_date = datetime.strptime(end_date, "%d-%m-%Y")
+		
+		delta = end_date - start_date
+		random_days = random.randint(0, delta.days)
+		return (start_date + timedelta(days=random_days)).strftime("%d-%m-%Y")
+
+
 GENERATORS = {
 	"email": EmailGen,
 	"name": NameGen,
@@ -76,15 +92,20 @@ GENERATORS = {
 	"hash": HashGen,
 	"number": NumberGen,
 	"choice": ChoiceGen,
+	"date": DateGen,
 }
 
 
 def create_new_instance(table_conf: dict):
 	new_row = []
 	for field, options in table_conf['fields'].items():
-		generator = GENERATORS.get(options['generator'])
+		generator = GENERATORS.get(options['generator'])()
 		new_row.append(generator.get_random(options))
+	return new_row
 
 
 if __name__ == '__main__':
-	create_new_instance()
+	with open("../configs/tables.yml", 'r') as ymlfile:
+		config = yaml.safe_load(ymlfile)
+	ins = create_new_instance(config.get("tables").get("Users"))
+	print(ins)

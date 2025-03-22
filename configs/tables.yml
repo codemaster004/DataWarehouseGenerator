@@ -24,6 +24,6 @@ tables:
         generator: "choice"
         values: [ true, false ]
         weights: [ 0, 1 ]
-#      BirthDate:
-#        generator: "date"
-#        range: ["01-01-2023", "18-03-2024"]
+      BirthDate:
+        generator: "date"
+        range: ["01-01-2023", "18-03-2024"]
