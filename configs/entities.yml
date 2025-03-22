@@ -1,6 +1,5 @@
-tables:
+entities:
   Users:
-    path: "data/users.csv"
     pk: "Email"
     fields:
       Email:

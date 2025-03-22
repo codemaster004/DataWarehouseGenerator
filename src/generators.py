@@ -105,7 +105,7 @@ def create_new_instance(table_conf: dict):
 
 
 if __name__ == '__main__':
-	with open("../configs/tables.yml", 'r') as ymlfile:
+	with open("../configs/entities.yml", 'r') as ymlfile:
 		config = yaml.safe_load(ymlfile)
-	ins = create_new_instance(config.get("tables").get("Users"))
+	ins = create_new_instance(config.get("entities").get("Users"))
 	print(ins)
