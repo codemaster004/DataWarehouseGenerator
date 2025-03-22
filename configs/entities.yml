@@ -26,3 +26,30 @@ entities:
       BirthDate:
         generator: "date"
         range: ["01-01-2023", "18-03-2024"]
+  Agents:
+    pk: "Email"
+    fields:
+      Email:
+        generator: "email"
+        unique: true
+      Name:
+        generator: "name"
+      Surname:
+        generator: "surname"
+      PassHash:
+        generator: "hash"
+      PhoneNumber:
+        generator: "number"
+        unique: true
+        range: [ 100_000_000, 999_999_999 ]
+      IsActive:
+        generator: "choice"
+        values: [ "active", "inactive", "notVerified" ]
+        weights: [ 1, 0.0, 0.0 ]
+      IsStaff:
+        generator: "choice"
+        values: [ true, false ]
+        weights: [ 1, 0 ]
+      BirthDate:
+        generator: "date"
+        range: [ "01-01-2023", "18-03-2024" ]
