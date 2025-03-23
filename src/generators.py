@@ -26,7 +26,9 @@ class EmailGen(Generator):
 		email = '-'.join([email, r_name])
 		
 		email = '-'.join([email, ''.join([str(random.randint(0, 9)) for _ in range(4)])])
-		email = '@'.join([email, random.choice(['gmail.com', 'wp.pl'])])
+		email = '@'.join([email, random.choice([
+   		 				'gmail.com', 'wp.pl', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'aol.com', 'protonmail.com', 'zoho.com', 'gmx.com',
+    					'mail.com', 'yandex.com', 'tutanota.com', 'live.com', 'me.com', 'inbox.lv', 'o2.pl', 'onet.pl', 'interia.pl', 'op.pl'])])
 		return email
 
 
@@ -35,7 +37,13 @@ class NameGen(Generator):
 		super().__init__()
 	
 	def get_random(self, conf_options: dict):
-		names = ['Steve', 'Alex']
+		names = [
+			'Steve', 'Alex', 'John', 'Michael', 'David', 'James', 'Robert', 'William', 'Joseph', 'Daniel',
+			'Matthew', 'Andrew', 'Joshua', 'Christopher', 'Brian', 'Kevin', 'Thomas', 'Jonathan', 'Nicholas', 'Anthony',
+			'Ryan', 'Jason', 'Jacob', 'Eric', 'Brandon', 'Tyler', 'Ethan', 'Benjamin', 'Noah', 'Samuel',
+			'Henry', 'Nathan', 'Christian', 'Adam', 'Patrick', 'Richard', 'Logan', 'Zachary', 'Charles', 'Aaron',
+			'Kyle', 'Sean', 'Dylan', 'Luke', 'Isaac', 'Gabriel', 'Owen', 'Mason', 'Eli', 'Connor'
+		]
 		return random.choice(names)
 
 
@@ -44,7 +52,13 @@ class SurnameGen(Generator):
 		super().__init__()
 	
 	def get_random(self, conf_options: dict):
-		surnames = ['Kowalski', 'Bond']
+		surnames = [
+			'Kowalski', 'Bond', 'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Garcia',
+			'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor',
+			'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez',
+			'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen',
+			'Hill', 'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell'
+		]
 		return random.choice(surnames)
 
 
