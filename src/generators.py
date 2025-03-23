@@ -2,8 +2,9 @@ import random
 import hashlib
 from datetime import datetime, timedelta
 
-import pandas
+import pandas as pd
 import yaml
+import math
 
 
 class Generator:
@@ -102,13 +103,20 @@ GENERATORS = {
 }
 
 
-def create_new_instance(ins_conf: dict, variant: str | None, references: dict | None) -> dict:
+def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str | None, references: dict | None) -> dict:
 	new_ins = {}
 	for field, options in ins_conf['fields'].items():
 		if variant is not None:
 			options.update(ins_conf['variants'][variant].get(field, {}))
 		
-		if 'reference' in options:
+		if 'autoIncrement' in options.keys():
+			attribute = population[field].max()
+			if math.isnan(attribute):
+				attribute = options['autoIncrement'] - 1
+			new_ins[field] = attribute + 1
+			continue
+		
+		if 'reference' in options.keys():
 			entity, attribute = options['reference'].split('+')
 			new_ins[field] = references[entity][attribute]  # todo: try catch...
 			continue
@@ -118,12 +126,12 @@ def create_new_instance(ins_conf: dict, variant: str | None, references: dict | 
 	return new_ins
 
 
-def handle_unique_values(population: pandas.DataFrame, new_instance: dict, table_conf: dict) -> dict:
+def handle_unique_values(population: pd.DataFrame, new_instance: dict, table_conf: dict) -> dict:
 	return new_instance  # todo: implement
 
 
 def add_instance_to_population(
-		population: pandas.DataFrame,
+		population: pd.DataFrame,
 		instance_conf: dict,
 		variant: str = None,
 		ref_entities: dict = None
@@ -136,7 +144,7 @@ def add_instance_to_population(
 		if dependency not in ref_entities:
 			print(f"WARNING: Dependency '{dependency}' not found")
 			return {}
-	new_instance = create_new_instance(instance_conf, variant=variant, references=ref_entities)
+	new_instance = create_new_instance(instance_conf, population, variant=variant, references=ref_entities)
 	new_instance = handle_unique_values(population, new_instance, instance_conf)
 	population.loc[len(population)] = new_instance
 	return new_instance
@@ -145,7 +153,7 @@ def add_instance_to_population(
 if __name__ == '__main__':
 	with open("../configs/entities.yml", 'r') as ymlfile:
 		config = yaml.safe_load(ymlfile)
-	ins = create_new_instance(config.get("entities").get("User"), None, None)
+	ins = create_new_instance(config.get("entities").get("User"), 0, None, None)
 	print(ins)
-	ins = create_new_instance(config.get("entities").get("User"), variant='Users', references=None)
+	ins = create_new_instance(config.get("entities").get("User"), 0, variant='Users', references=None)
 	print(ins)
