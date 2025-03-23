@@ -10,9 +10,9 @@ from generators import add_instance_to_population
 
 N_INITIAL_AGENTS = 16
 STARTING_DATE = "16-03-2025"
-N_EPISODES = 10
+N_EPISODES = 2
 
-REQUESTS_LAMBDA = 32
+REQUESTS_LAMBDA = 16
 CHANCE_FROM_NEW_USER = 0.9
 
 
@@ -26,7 +26,11 @@ def simulation_episode(df_users, df_estates, df_requests, entities_conf):
 				entities_conf["Estate"],
 				variant="House",
 			)
-			
+			add_instance_to_population(
+				df_requests,
+				entities_conf["Request"],
+				ref_entities={"User": new_user, "Estate": new_estate},
+			)
 		else:
 			pass  # todo: in future pick random user
 
