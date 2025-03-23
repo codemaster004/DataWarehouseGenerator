@@ -176,6 +176,9 @@ GENERATORS = {
 def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str | None, references: dict | None) -> dict:
 	new_ins = {}
 	for field, options in ins_conf['fields'].items():
+		if options is None:  # for the edge case when all data is stored in variants
+			options = {}
+		
 		if variant is not None:
 			options.update(ins_conf['variants'][variant].get(field, {}))
 		
