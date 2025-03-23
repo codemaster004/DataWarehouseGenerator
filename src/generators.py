@@ -109,6 +109,11 @@ def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str |
 		if variant is not None:
 			options.update(ins_conf['variants'][variant].get(field, {}))
 		
+		if 'value' in options.keys():
+			attribute = options['value']
+			new_ins[field] = attribute
+			continue
+		
 		if 'autoIncrement' in options.keys():
 			attribute = population[field].max()
 			if math.isnan(attribute):
