@@ -64,10 +64,11 @@ class SurnameGen(Generator):
 		]
 		return random.choice(surnames)
 
-class StreetGen:
+
+class StreetGen(Generator):
 	def __init__(self):
 		super().__init__()
-
+	
 	def get_random(self, conf_options: dict):
 		street_names = [
 			"Marszalkowska", "Krucza", "Jana Pawla II", "Nowowiejska", "Koszykowa", "Targowa", "Pulawska",
@@ -78,9 +79,11 @@ class StreetGen:
 			"Wyspianskiego", "Orzeszkowej", "Prusa", "Konopnickiej", "Slowackiego", "Krasinskiego",
 			"Witosa", "Pilsudskiego", "Jagiellonska", "Sobieskiego", "Wladyslawa IV", "Brzozowa", "Dabrowska",
 			"Lipowa", "Jesionowa", "Modrzewiowa", "Bukowa", "Kasztanowa", "Klonowa", "Jodlowa", "Akacjowa",
-			"Debowa", "Oliwkowa", "Lesna", "Zaciszna", "Borowa", "Malinowa", "Jagodowa", "Morelowa", "Jabloniowa", "Winogronowa"
+			"Debowa", "Oliwkowa", "Lesna", "Zaciszna", "Borowa", "Malinowa", "Jagodowa", "Morelowa", "Jabloniowa",
+			"Winogronowa"
 		]
 		return random.choice(street_names)
+
 
 class DistrictName(Generator):
 	def __init__(self):
