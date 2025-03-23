@@ -11,7 +11,7 @@ STARTING_DATE = "16-03-2025"
 N_EPISODES = 2
 
 REQUESTS_LAMBDA = 8
-CHANCE_FROM_NEW_USER = 0.9
+CHANCE_FROM_NEW_USER = 0.8
 
 READ_EXISTING_FILES = False
 
@@ -19,29 +19,30 @@ READ_EXISTING_FILES = False
 def simulation_episode(df_users, df_agents, df_estates, df_requests, entities_conf, today_date):
 	n_new_requests = int(stats.poisson.ppf(random.random(), mu=REQUESTS_LAMBDA))
 	for _ in range(n_new_requests):
+		variances_request = list(entities_conf["Request"].get("variants", {}).keys())
+		variances_request = random.choice(variances_request) if variances_request else None
+		variance_estate = "House" if "House" in variances_request else "Flat"
+		
 		if random.random() <= CHANCE_FROM_NEW_USER:
-			new_user = add_instance_to_population(df_users, entities_conf["User"], variant="User")
-			
-			variances_request = list(entities_conf["Request"].get("variants", {}).keys())
-			variances_request = random.choice(variances_request) if variances_request else None
-			variance_estate = "House" if "House" in variances_request else "Flat"
-			
-			new_estate = add_instance_to_population(
-				df_estates,
-				entities_conf["Estate"],
-				variant=variance_estate,
-				ref_entities={"User": new_user}
-			)
-			add_instance_to_population(
-				df_requests,
-				entities_conf["Request"],
-				variant=variances_request,
-				ref_entities={"User": new_user, "Estate": new_estate, "Agent": {}},
-			)
-			# Not the best way to do it, but it works
-			df_requests.loc[len(df_requests)-1, "CreatedAt"] = today_date.strftime("%d-%m-%Y")
+			user = add_instance_to_population(df_users, entities_conf["User"], variant="User")
 		else:
-			pass  # todo: in future pick random user
+			random_i = random.randint(0, len(df_users[df_users["IsStaff"] == False]) - 1)
+			user = df_users[df_users["IsStaff"] == False].iloc[random_i].to_dict()
+		
+		new_estate = add_instance_to_population(
+			df_estates,
+			entities_conf["Estate"],
+			variant=variance_estate,
+			ref_entities={"User": user}
+		)
+		add_instance_to_population(
+			df_requests,
+			entities_conf["Request"],
+			variant=variances_request,
+			ref_entities={"User": user, "Estate": new_estate, "Agent": {}},
+		)
+		# Not the best way to do it, but it works
+		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%d-%m-%Y")
 
 
 def main():
