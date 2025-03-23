@@ -38,6 +38,8 @@ def simulation_episode(df_users, df_agents, df_estates, df_requests, entities_co
 				variant=variances_request,
 				ref_entities={"User": new_user, "Estate": new_estate, "Agent": {}},
 			)
+			# Not the best way to do it, but it works
+			df_requests.loc[len(df_requests)-1, "CreatedAt"] = today_date.strftime("%d-%m-%Y")
 		else:
 			pass  # todo: in future pick random user
 
