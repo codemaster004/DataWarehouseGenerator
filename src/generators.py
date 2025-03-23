@@ -22,10 +22,10 @@ class EmailGen(Generator):
 	def get_random(self, conf_options: dict):
 		email = 'DW'
 		
-		r_name = ''.join([chr(random.randint(65, 123)) for _ in range(random.randint(8, 16))])
+		r_name = ''.join([chr(random.choice(list(range(65, 91)) + list(range(97, 123)))) for _ in range(random.randint(8, 16))])
 		email = '-'.join([email, r_name])
 		
-		email = '-'.join([email, ''.join([str(random.randint(0, 10)) for _ in range(4)])])
+		email = '-'.join([email, ''.join([str(random.randint(0, 9)) for _ in range(4)])])
 		email = '@'.join([email, random.choice(['gmail.com', 'wp.pl'])])
 		return email
 
@@ -108,6 +108,11 @@ def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str |
 	for field, options in ins_conf['fields'].items():
 		if variant is not None:
 			options.update(ins_conf['variants'][variant].get(field, {}))
+		
+		if 'value' in options.keys():
+			attribute = options['value']
+			new_ins[field] = attribute
+			continue
 		
 		if 'autoIncrement' in options.keys():
 			attribute = population[field].max()
