@@ -56,7 +56,6 @@ def simulation_episode(df_users, df_agents, df_estates, df_requests, df_form, en
 				variant=variant_form,
 				ref_entities={"User": user},
 			)
-			pass
 
 
 def main():
