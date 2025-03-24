@@ -7,18 +7,25 @@ import random
 from generators import add_instance_to_population
 
 N_INITIAL_AGENTS = 16
-STARTING_DATE = "16-03-2025"
-N_EPISODES = 2
+STARTING_DATE = "20-03-2025"
+N_EPISODES = 1
 
 REQUESTS_LAMBDA = 8
 CHANCE_FROM_NEW_USER = 0.8
 
-READ_EXISTING_FILES = False
+READ_EXISTING_FILES = True
 
-CHANCE_TO_FILL_THE_FORM = 0.14
+CHANCE_TO_FILL_THE_FORM = 0.2
 CHANCE_FORM_VARIANTS = [0.8, 0.2]
 
 # CHANCE_USER_TO_PICK_RANDOM_AGENT = 0.2
+
+CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ = 0.2
+CHANCE_AGENT_REJECTS_ASSIGNED_REQ = 0.2
+# TODO: HERE THIS HELP!!!
+# CHANCE_AGENT_ACCEPTS_RANDOM_REQ = 0.1
+# CHANCE_AGENT_REJECTS_RANDOM_REQ = 0.05
+# CHANCE_AGENT_IGNORES_RANDOM_REQ = 0.1
 
 
 def simulation_episode(
@@ -105,6 +112,12 @@ def simulation_episode(
 				variant=variant_form,
 				ref_entities={"User": user},
 			)
+	
+	for index, row in df_req_agent[df_req_agent["Status"] == "Pending"].iterrows():
+		if random.random() <= CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ:
+			df_req_agent.loc[index, "Status"] = "Accepted"
+		elif random.random() <= CHANCE_AGENT_REJECTS_ASSIGNED_REQ:
+			df_req_agent.loc[index, "Status"] = "Rejected"
 
 
 def main():
