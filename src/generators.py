@@ -64,10 +64,11 @@ class SurnameGen(Generator):
 		]
 		return random.choice(surnames)
 
-class StreetGen:
+
+class StreetGen(Generator):
 	def __init__(self):
 		super().__init__()
-
+	
 	def get_random(self, conf_options: dict):
 		street_names = [
 			"Marszalkowska", "Krucza", "Jana Pawla II", "Nowowiejska", "Koszykowa", "Targowa", "Pulawska",
@@ -78,26 +79,11 @@ class StreetGen:
 			"Wyspianskiego", "Orzeszkowej", "Prusa", "Konopnickiej", "Slowackiego", "Krasinskiego",
 			"Witosa", "Pilsudskiego", "Jagiellonska", "Sobieskiego", "Wladyslawa IV", "Brzozowa", "Dabrowska",
 			"Lipowa", "Jesionowa", "Modrzewiowa", "Bukowa", "Kasztanowa", "Klonowa", "Jodlowa", "Akacjowa",
-			"Debowa", "Oliwkowa", "Lesna", "Zaciszna", "Borowa", "Malinowa", "Jagodowa", "Morelowa", "Jabloniowa", "Winogronowa"
+			"Debowa", "Oliwkowa", "Lesna", "Zaciszna", "Borowa", "Malinowa", "Jagodowa", "Morelowa", "Jabloniowa",
+			"Winogronowa"
 		]
 		return random.choice(street_names)
 
-class TimeGen(Generator):
-	def __init__(self):
-		super().__init__()
-
-	def get_random_start_time(self, conf_options: dict):
-		start_date = datetime(2020, 1, 1)
-		end_date = datetime(2026, 12, 31)
-		time_diff = end_date - start_date
-		random_seconds = random.randint(0, int(time_diff.total_seconds()))
-		random_start_time = start_date + timedelta(seconds=random_seconds)
-		return random_start_time.strftime('%Y-%m-%d %H:%M:%S')
-
-	def get_submission_time(self, conf_options: dict, start_time: datetime):
-		random_delay = random.randint(0, 48 * 3600)  # Up to 48 hours later in seconds
-		submission_time = start_time + timedelta(seconds=random_delay)
-		return submission_time.strftime('%Y-%m-%d %H:%M:%S')
 
 class DistrictName(Generator):
 	def __init__(self):
@@ -186,14 +172,16 @@ GENERATORS = {
 	"choice": ChoiceGen,
 	"date": DateGen,
 	"district": DistrictName,
-	"street": StreetGen,
-	"time": TimeGen
+	"street": StreetGen
 }
 
 
 def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str | None, references: dict | None) -> dict:
 	new_ins = {}
 	for field, options in ins_conf['fields'].items():
+		if options is None:  # for the edge case when all data is stored in variants
+			options = {}
+		
 		if variant is not None:
 			options.update(ins_conf['variants'][variant].get(field, {}))
 		
