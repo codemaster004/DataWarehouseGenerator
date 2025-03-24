@@ -7,13 +7,13 @@ import random
 from generators import add_instance_to_population
 
 N_INITIAL_AGENTS = 16
-STARTING_DATE = "20-03-2025"
+STARTING_DATE = "2025-03-10"
 N_EPISODES = 1
 
 REQUESTS_LAMBDA = 8
 CHANCE_FROM_NEW_USER = 0.8
 
-READ_EXISTING_FILES = True
+READ_EXISTING_FILES = False
 
 CHANCE_TO_FILL_THE_FORM = 0.2
 CHANCE_FORM_VARIANTS = [0.8, 0.2]
@@ -87,7 +87,7 @@ def simulation_episode(
 		)
 		# Note: Not the best way to do it, but it works
 		# Take the last record in DF and set its date to today's simulation day
-		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%d-%m-%Y")
+		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d")
 		
 		# Read newly created Request, if picked that agent was created, generate corresponding M2M record
 		if new_req['isAgentAssigned']:
@@ -162,7 +162,7 @@ def main():
 			add_instance_to_population(df_agents, entities_conf["Agent"], ref_entities={"User": new_agent})
 	
 	# for N days
-	today_date = datetime.datetime.strptime(STARTING_DATE, "%d-%m-%Y")
+	today_date = datetime.datetime.strptime(STARTING_DATE, "%Y-%m-%d")
 	for i in range(N_EPISODES):
 		simulation_episode(
 			df_users, df_agents, df_estates, df_requests, df_form, df_city, df_address, df_req_agent,

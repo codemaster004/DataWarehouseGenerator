@@ -154,13 +154,13 @@ class DateGen(Generator):
 		super().__init__()
 	
 	def get_random(self, conf_options: dict):
-		start_date, end_date = conf_options.get('range', ["01-01-2023", "18-03-2024"])
-		start_date = datetime.strptime(start_date, "%d-%m-%Y")
-		end_date = datetime.strptime(end_date, "%d-%m-%Y")
+		start_date, end_date = conf_options.get('range', ["2023-01-01", "2024-03-18"])
+		start_date = datetime.strptime(start_date, "%Y-%m-%d")
+		end_date = datetime.strptime(end_date, "%Y-%m-%d")
 		
 		delta = end_date - start_date
 		random_days = random.randint(0, delta.days)
-		return (start_date + timedelta(days=random_days)).strftime("%d-%m-%Y")
+		return (start_date + timedelta(days=random_days)).strftime("%Y-%m-%d")
 
 
 GENERATORS = {
