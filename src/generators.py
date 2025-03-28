@@ -219,18 +219,24 @@ def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str |
 
 
 def handle_unique_values(population: pd.DataFrame, new_instance: dict, table_conf: dict) -> dict:
-		for field, options in table_conf.get('fields', {}).items():
-			if options and options.get('unique', False):
-				generator = GENERATORS.get(options['generator'])()
+	for field, options in table_conf.get('fields', {}).items():
+		if options and options.get('unique', False):
+			existing_values = population[field].values
+			current_value = new_instance.get(field)
 
-				for _ in range(10):
-					new_value = generator.get_random(options)
-					if new_value not in population[field].values:
-						new_instance[field] = new_value
-						break
-					else:
-						raise ValueError(f'Somehow failed to generate a unique value for {field} after 10 attempts.')
-		return new_instance
+			if current_value not in existing_values:  # if value is unique, skip
+				continue
+
+			generator = GENERATORS.get(options['generator'])()
+
+			for _ in range(10):
+				new_value = generator.get_random(options)
+				if new_value not in existing_values:
+					new_instance[field] = new_value
+					break
+			else:
+					raise ValueError(f'Somehow failed to generate a unique value for {field} after 10 attempts.')
+	return new_instance
 
 
 def add_instance_to_population(
