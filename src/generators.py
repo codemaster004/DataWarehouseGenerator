@@ -10,7 +10,7 @@ import math
 class Generator:
 	def __init__(self):
 		pass
-	
+
 	def get_random(self, conf_options: dict):
 		pass
 
@@ -18,14 +18,14 @@ class Generator:
 class EmailGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		email = 'DW'
-		
+
 		r_name = ''.join(
 			[chr(random.choice(list(range(65, 91)) + list(range(97, 123)))) for _ in range(random.randint(8, 16))])
 		email = '-'.join([email, r_name])
-		
+
 		email = '-'.join([email, ''.join([str(random.randint(0, 9)) for _ in range(4)])])
 		email = '@'.join([email, random.choice([
 			'gmail.com', 'wp.pl', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'aol.com', 'protonmail.com',
@@ -38,7 +38,7 @@ class EmailGen(Generator):
 class NameGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		names = [
 			'Steve', 'Alex', 'John', 'Michael', 'David', 'James', 'Robert', 'William', 'Joseph', 'Daniel',
@@ -53,7 +53,7 @@ class NameGen(Generator):
 class SurnameGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		surnames = [
 			'Kowalski', 'Bond', 'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Garcia',
@@ -68,7 +68,7 @@ class SurnameGen(Generator):
 class StreetGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		street_names = [
 			"Marszalkowska", "Krucza", "Jana Pawla II", "Nowowiejska", "Koszykowa", "Targowa", "Pulawska",
@@ -88,7 +88,7 @@ class StreetGen(Generator):
 class DistrictName(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		city_districts = {
 			"Gdansk": [
@@ -110,9 +110,9 @@ class DistrictName(Generator):
 				"Karlikowo", "Przylesie"
 			]
 		}
-		
+
 		city = conf_options.get("city")
-		
+
 		if city in city_districts:
 			return random.choice(city_districts[city])
 		else:
@@ -122,7 +122,7 @@ class DistrictName(Generator):
 class HashGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		password = ''.join([chr(random.randint(65, 123)) for _ in range(random.randint(8, 16))])
 		return hashlib.sha256(password.encode()).hexdigest()
@@ -131,16 +131,26 @@ class HashGen(Generator):
 class NumberGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		range_ = conf_options.get('range', [0, 100])
 		return random.randint(*range_)
 
 
+class FloatGen(Generator):
+		def __init__(self):
+				super().__init__()
+
+		def get_random(self, conf_options: dict):
+				range_ = conf_options.get('range', [0, 100])
+				precision = conf_options.get('precision', 2)
+				return round(random.uniform(*range_), precision)
+
+
 class ChoiceGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		if 'weights' in conf_options:
 			result = random.choices(conf_options.get('values', [None]), weights=conf_options['weights'], k=1)[0]
@@ -152,12 +162,12 @@ class ChoiceGen(Generator):
 class DateGen(Generator):
 	def __init__(self):
 		super().__init__()
-	
+
 	def get_random(self, conf_options: dict):
 		start_date, end_date = conf_options.get('range', ["2023-01-01", "2024-03-18"])
 		start_date = datetime.strptime(start_date, "%Y-%m-%d")
 		end_date = datetime.strptime(end_date, "%Y-%m-%d")
-		
+
 		delta = end_date - start_date
 		random_days = random.randint(0, delta.days)
 		return (start_date + timedelta(days=random_days)).strftime("%Y-%m-%d")
@@ -169,6 +179,7 @@ GENERATORS = {
 	"surname": SurnameGen,
 	"hash": HashGen,
 	"number": NumberGen,
+	"float": FloatGen,
 	"choice": ChoiceGen,
 	"date": DateGen,
 	"district": DistrictName,
@@ -181,27 +192,27 @@ def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str |
 	for field, options in ins_conf['fields'].items():
 		if options is None:  # for the edge case when all data is stored in variants
 			options = {}
-		
+
 		if variant is not None:
 			options.update(ins_conf['variants'][variant].get(field, {}))
-		
+
 		if 'value' in options.keys():
 			attribute = options['value']
 			new_ins[field] = attribute
 			continue
-		
+
 		if 'autoIncrement' in options.keys():
 			attribute = population[field].max()
 			if math.isnan(attribute):
 				attribute = options['autoIncrement'] - 1
 			new_ins[field] = attribute + 1
 			continue
-		
+
 		if 'reference' in options.keys():
 			entity, attribute = options['reference'].split('+')
 			new_ins[field] = references[entity][attribute]  # todo: try catch...
 			continue
-		
+
 		generator = GENERATORS.get(options['generator'])()
 		new_ins[field] = generator.get_random(options)
 	return new_ins
