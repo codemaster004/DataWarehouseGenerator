@@ -138,13 +138,13 @@ class NumberGen(Generator):
 
 
 class FloatGen(Generator):
-		def __init__(self):
-				super().__init__()
+	def __init__(self):
+		super().__init__()
 
-		def get_random(self, conf_options: dict):
-				range_ = conf_options.get('range', [0, 100])
-				precision = conf_options.get('precision', 2)
-				return round(random.uniform(*range_), precision)
+	def get_random(self, conf_options: dict):
+		range_ = conf_options.get('range', [0, 100])
+		precision = conf_options.get('precision', 2)
+		return round(random.uniform(*range_), precision)
 
 
 class ChoiceGen(Generator):
@@ -173,6 +173,20 @@ class DateGen(Generator):
 		return (start_date + timedelta(days=random_days)).strftime("%Y-%m-%d")
 
 
+class TimeGen(Generator):
+	def __init__(self):
+		super().__init__()
+
+	def get_random(self, conf_options: dict):
+		start_time, end_time = conf_options.get('range', ["00:00", "23:59"])
+		start_time = datetime.strptime(start_time, "%H:%M")
+		end_time = datetime.strptime(end_time, "%H:%M")
+
+		delta = end_time - start_time
+		random_seconds = random.randint(0, delta.seconds)
+		return (start_time + timedelta(seconds=random_seconds)).strftime("%H:%M")
+
+
 GENERATORS = {
 	"email": EmailGen,
 	"name": NameGen,
@@ -182,6 +196,7 @@ GENERATORS = {
 	"float": FloatGen,
 	"choice": ChoiceGen,
 	"date": DateGen,
+	"time": TimeGen,
 	"district": DistrictName,
 	"street": StreetGen
 }
@@ -219,18 +234,18 @@ def create_new_instance(ins_conf: dict, population: pd.DataFrame, variant: str |
 
 
 def handle_unique_values(population: pd.DataFrame, new_instance: dict, table_conf: dict) -> dict:
-		for field, options in table_conf.get('fields', {}).items():
-			if options and options.get('unique', False):
-				generator = GENERATORS.get(options['generator'])()
+	for field, options in table_conf.get('fields', {}).items():
+		if options and options.get('unique', False):
+			generator = GENERATORS.get(options['generator'])()
 
-				for _ in range(10):
-					new_value = generator.get_random(options)
-					if new_value not in population[field].values:
-						new_instance[field] = new_value
-						break
-					else:
-						raise ValueError(f'Somehow failed to generate a unique value for {field} after 10 attempts.')
-		return new_instance
+			for _ in range(10):
+				new_value = generator.get_random(options)
+				if new_value not in population[field].values:
+					new_instance[field] = new_value
+					break
+				else:
+					raise ValueError(f'Somehow failed to generate a unique value for {field} after 10 attempts.')
+	return new_instance
 
 
 def add_instance_to_population(

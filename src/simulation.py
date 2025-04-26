@@ -3,17 +3,18 @@ import scipy.stats as stats
 import yaml
 import datetime
 import random
+from datetime import datetime as dt
 
 from generators import add_instance_to_population
 
 N_INITIAL_AGENTS = 16
-STARTING_DATE = "2025-03-14"
-N_EPISODES = 2
+STARTING_DATE = "2022-03-14"
+N_EPISODES = 200
 
 REQUESTS_LAMBDA = 8
 CHANCE_FROM_NEW_USER = 0.8
 
-READ_EXISTING_FILES = True
+READ_EXISTING_FILES = False
 
 CHANCE_TO_FILL_THE_FORM = 0.2
 CHANCE_FORM_VARIANTS = [0.8, 0.2]
@@ -23,6 +24,8 @@ CHANCE_FORM_VARIANTS = [0.8, 0.2]
 CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ = 0.2
 CHANCE_AGENT_REJECTS_ASSIGNED_REQ = 0.2
 CHANCE_AGENT_GETS_A_PROMOTION = 0.2
+
+
 # TODO: HERE THIS HELP!!!
 # CHANCE_AGENT_ACCEPTS_RANDOM_REQ = 0.1
 # CHANCE_AGENT_REJECTS_RANDOM_REQ = 0.05
@@ -46,9 +49,9 @@ def simulation_episode(
 	for _ in range(n_new_requests):
 		# pick variants for Request and Estate respectively
 		variant_request = list(entities_conf["Request"].get("variants", {}).keys())
-		variant_request = random.choice(variant_request) if variant_request else None  # todo: weights
-		variant_estate = "House" if "House" in variant_request else "Flat"
-		
+		variant_request = random.choice(variant_request) if variant_request else "FlatForSale"
+		variant_estate = variant_request.split("For")[0]
+
 		# Requests can be made by new users or reoccurring users
 		if random.random() <= CHANCE_FROM_NEW_USER:
 			# Simple generation of new instance
@@ -60,19 +63,19 @@ def simulation_episode(
 				continue
 			user_i = random.randint(0, n_users - 1)
 			user = df_users[df_users["isStaff"] == False].iloc[user_i].to_dict()
-		
+
 		# Pick variant and generate city
 		# todo: not duplicating City Districts
 		variant_city = random.choice(list(entities_conf["City"].get("variants", {}).keys()))
 		new_city = add_instance_to_population(df_city, entities_conf["City"], variant=variant_city)
-		
+
 		# Generate new address in the city, for the estate, request
 		new_address = add_instance_to_population(
 			df_address,
 			entities_conf["Address"],
 			ref_entities={"City": new_city}
 		)
-		# Generate new Estate, from User, under the address for teh request
+		# Generate new Estate, from User, under the address for the request
 		new_estate = add_instance_to_population(
 			df_estates,
 			entities_conf["Estate"],
@@ -89,7 +92,7 @@ def simulation_episode(
 		# Note: Not the best way to do it, but it works
 		# Take the last record in DF and set its date to today's simulation day
 		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d")
-		
+
 		# Read newly created Request, if picked that agent was created, generate corresponding M2M record
 		if new_req['isAgentAssigned']:
 			# Picking random Agent for assigning the estate
@@ -100,26 +103,29 @@ def simulation_episode(
 				entities_conf["RequestAgent"],
 				ref_entities={"Agent": agent, "Request": new_req}
 			)
-		
-		# At the end of creating the Request User has an option to fill out the Form
+
+		# At the end of creating the Request User can fill out the Form
 		if random.random() <= CHANCE_TO_FILL_THE_FORM:
 			# Note: Not realistic but good enough
 			# Pick whether user created an account or not, important for data references
 			variant_form = list(entities_conf["Form"].get("variants", {}).keys())
 			variant_form = random.choices(variant_form, weights=CHANCE_FORM_VARIANTS, k=1)[0] if variant_form else None
-			add_instance_to_population(
+			new_f = add_instance_to_population(
 				df_form,
 				entities_conf["Form"],
 				variant=variant_form,
 				ref_entities={"User": user},
 			)
-	
+			if dt.strptime(new_f['RequestStartTime'], "%H:%M") > dt.strptime(new_f['RequestSubmissionTime'], "%H:%M"):
+				df_form.at[df_form.index[-1], "RequestStartTime"], df_form.at[df_form.index[-1], "RequestSubmissionTime"] = \
+					df_form.at[df_form.index[-1], "RequestSubmissionTime"], df_form.at[df_form.index[-1], "RequestStartTime"]
+
 	for index, row in df_req_agent[df_req_agent["Status"] == "Pending"].iterrows():
 		if random.random() <= CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ:
 			df_req_agent.loc[index, "Status"] = "Accepted"
 		elif random.random() <= CHANCE_AGENT_REJECTS_ASSIGNED_REQ:
 			df_req_agent.loc[index, "Status"] = "Rejected"
-	
+
 	for index, row in df_agents.iterrows():
 		if random.random() <= CHANCE_AGENT_GETS_A_PROMOTION:
 			df_agents.loc[index, "CommissionFee"] += 0.2
@@ -135,12 +141,12 @@ def main():
 			print(exc)
 		except KeyError as exc:
 			print(exc)
-	
+
 	# todo: to function
 	if entities_conf is None:
 		print("No entities configuration")
 		return
-	
+
 	if READ_EXISTING_FILES:
 		df_users = pd.read_csv(entities_conf["User"]["path"])
 		df_agents = pd.read_csv(entities_conf["Agent"]["path"])
@@ -159,13 +165,13 @@ def main():
 		df_city = pd.DataFrame(columns=entities_conf["City"]["fields"].keys())
 		df_address = pd.DataFrame(columns=entities_conf["Address"]["fields"].keys())
 		df_req_agent = pd.DataFrame(columns=entities_conf["RequestAgent"]["fields"].keys())
-	
+
 	# Add initial Agents
 	if not READ_EXISTING_FILES:
 		for i in range(N_INITIAL_AGENTS):
 			new_agent = add_instance_to_population(df_users, entities_conf["User"], variant="Agent")
 			add_instance_to_population(df_agents, entities_conf["Agent"], ref_entities={"User": new_agent})
-	
+
 	# for N days
 	today_date = datetime.datetime.strptime(STARTING_DATE, "%Y-%m-%d")
 	for i in range(N_EPISODES):
@@ -175,7 +181,7 @@ def main():
 		)
 		today_date = today_date + datetime.timedelta(days=1)
 	#   ? some new requests
-	
+
 	df_users.to_csv(entities_conf["User"]["path"], index=False)
 	df_agents.to_csv(entities_conf["Agent"]["path"], index=False)
 	df_estates.to_csv(entities_conf["Estate"]["path"], index=False)
