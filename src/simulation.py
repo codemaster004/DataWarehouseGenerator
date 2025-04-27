@@ -23,7 +23,7 @@ CHANCE_FORM_VARIANTS = [0.8, 0.2]
 
 CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ = 0.2
 CHANCE_AGENT_REJECTS_ASSIGNED_REQ = 0.2
-CHANCE_AGENT_GETS_A_PROMOTION = 0.2
+CHANCE_AGENT_GETS_A_PROMOTION = 0.1
 
 
 # TODO: HERE THIS HELP!!!
@@ -91,7 +91,7 @@ def simulation_episode(
 		)
 		# Note: Not the best way to do it, but it works
 		# Take the last record in DF and set its date to today's simulation day
-		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d")
+		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d %H:%M")
 
 		# Read newly created Request, if picked that agent was created, generate corresponding M2M record
 		if new_req['isAgentAssigned']:
@@ -119,6 +119,10 @@ def simulation_episode(
 			if dt.strptime(new_f['RequestStartTime'], "%H:%M") > dt.strptime(new_f['RequestSubmissionTime'], "%H:%M"):
 				df_form.at[df_form.index[-1], "RequestStartTime"], df_form.at[df_form.index[-1], "RequestSubmissionTime"] = \
 					df_form.at[df_form.index[-1], "RequestSubmissionTime"], df_form.at[df_form.index[-1], "RequestStartTime"]
+			df_form.at[df_form.index[-1], "RequestStartDate"] = today_date.strftime("%Y-%m-%d")
+			h = dt.strptime(df_form.at[df_form.index[-1], "RequestStartTime"], "%H:%M").hour
+			m = dt.strptime(df_form.at[df_form.index[-1], "RequestStartTime"], "%H:%M").minute
+			df_requests.at[df_requests.index[-1], "CreatedAt"] = today_date.replace(hour=h, minute=m).strftime("%Y-%m-%d %H:%M")
 
 	for index, row in df_req_agent[df_req_agent["Status"] == "Pending"].iterrows():
 		if random.random() <= CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ:

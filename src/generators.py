@@ -187,6 +187,20 @@ class TimeGen(Generator):
 		return (start_time + timedelta(seconds=random_seconds)).strftime("%H:%M")
 
 
+class DatetimeGen(Generator):
+	def __init__(self):
+		super().__init__()
+	
+	def get_random(self, conf_options: dict):
+		start_time, end_time = conf_options.get('range', ["2023-01-01 00:00", "2024-03-18 23:59"])
+		start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+		end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M")
+		
+		delta = end_time - start_time
+		random_minutes = random.randint(0, delta.seconds)
+		return (start_time + timedelta(seconds=random_minutes)).strftime("%Y-%m-%d %H:%M")
+
+
 GENERATORS = {
 	"email": EmailGen,
 	"name": NameGen,
@@ -197,6 +211,7 @@ GENERATORS = {
 	"choice": ChoiceGen,
 	"date": DateGen,
 	"time": TimeGen,
+	"datetime": DatetimeGen,
 	"district": DistrictName,
 	"street": StreetGen
 }
