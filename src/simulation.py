@@ -8,11 +8,11 @@ from datetime import datetime as dt
 from generators import add_instance_to_population
 
 N_INITIAL_AGENTS = 16
-STARTING_DATE = "2022-03-14"
-N_EPISODES = 200
+STARTING_DATE = "2022-01-30"
+N_EPISODES = 400
 
 REQUESTS_LAMBDA = 8
-CHANCE_FROM_NEW_USER = 0.8
+CHANCE_FROM_NEW_USER = 0.3
 
 READ_EXISTING_FILES = False
 
@@ -23,7 +23,7 @@ CHANCE_FORM_VARIANTS = [0.8, 0.2]
 
 CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ = 0.2
 CHANCE_AGENT_REJECTS_ASSIGNED_REQ = 0.2
-CHANCE_AGENT_GETS_A_PROMOTION = 0.1
+CHANCE_AGENT_GETS_A_PROMOTION = 0.01
 
 
 # TODO: HERE THIS HELP!!!
@@ -56,6 +56,7 @@ def simulation_episode(
 		if random.random() <= CHANCE_FROM_NEW_USER:
 			# Simple generation of new instance
 			user = add_instance_to_population(df_users, entities_conf["User"], variant="User")
+			df_users.loc[len(df_users) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d")
 		else:
 			# Picking new random existing User (not an Agent)
 			n_users = len(df_users[df_users["isStaff"] == False])
@@ -129,10 +130,11 @@ def simulation_episode(
 			df_req_agent.loc[index, "Status"] = "Accepted"
 		elif random.random() <= CHANCE_AGENT_REJECTS_ASSIGNED_REQ:
 			df_req_agent.loc[index, "Status"] = "Rejected"
-
+	
+	# todo: un-comment
 	for index, row in df_agents.iterrows():
 		if random.random() <= CHANCE_AGENT_GETS_A_PROMOTION:
-			df_agents.loc[index, "CommissionFee"] += 0.2
+			df_agents.loc[index, "CommissionFee"] += 0.1
 
 
 def main():
@@ -184,6 +186,7 @@ def main():
 			entities_conf, today_date
 		)
 		today_date = today_date + datetime.timedelta(days=1)
+		print("Next Date will be:", today_date)
 	#   ? some new requests
 
 	df_users.to_csv(entities_conf["User"]["path"], index=False)
