@@ -11,22 +11,35 @@ N_INITIAL_AGENTS = 16
 STARTING_DATE = "2022-01-30"
 N_EPISODES = 400
 
-REQUESTS_LAMBDA = 8
+NEW_REQUESTS_PER_DAY_LAMBDA = 8
 CHANCE_FROM_NEW_USER = 0.3
 
 READ_EXISTING_FILES = False
 
 CHANCE_TO_FILL_THE_FORM = 0.2
-CHANCE_FORM_VARIANTS = [0.8, 0.2]
+CHANCE_FORM_VARIANTS = [0.8, 0.2]  # [AccountCreated, AccountNotCreated]
 
 # CHANCE_USER_TO_PICK_RANDOM_AGENT = 0.2
 
 CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ = 0.2
-CHANCE_AGENT_REJECTS_ASSIGNED_REQ = 0.2
-CHANCE_AGENT_GETS_A_PROMOTION = 0.01
+CHANCE_AGENT_REJECTS_ASSIGNED_REQ = 0.15
+
+CHANCE_AGENT_GETS_A_PROMOTION = 0.015
+PROMOTION_CAP = 0.05
+PROMOTION_RATE = 0.01
+CHANCE_AGENT_GETS_A_DEMOTION = 0.01
+DEMOTION_RATE = 0.01
+DEMOTION_CAP = 0.1
+
+CHANCE_AGENT_GOES_ON_VACATION = 0.03
+CHANCE_AGENT_RETURNS_FROM_VACATION = 0.2
+
+HIRE_AGENTS_PER_YEAR_LAMBDA = 12
 
 
 # TODO: HERE THIS HELP!!!
+AGENT_ACCEPT_REQUEST_PER_DAY_LAMBDA = 1
+AGENT_REJECT_REQUEST_PER_DAY_LAMBDA = 0.2
 # CHANCE_AGENT_ACCEPTS_RANDOM_REQ = 0.1
 # CHANCE_AGENT_REJECTS_RANDOM_REQ = 0.05
 # CHANCE_AGENT_IGNORES_RANDOM_REQ = 0.1
@@ -45,13 +58,13 @@ def simulation_episode(
 		today_date
 ):
 	# How many requests will be made today, calculate using poison distribution
-	n_new_requests = int(stats.poisson.ppf(random.random(), mu=REQUESTS_LAMBDA))
+	n_new_requests = int(stats.poisson.ppf(random.random(), mu=NEW_REQUESTS_PER_DAY_LAMBDA))
 	for _ in range(n_new_requests):
 		# pick variants for Request and Estate respectively
 		variant_request = list(entities_conf["Request"].get("variants", {}).keys())
 		variant_request = random.choice(variant_request) if variant_request else "FlatForSale"
 		variant_estate = variant_request.split("For")[0]
-
+		
 		# Requests can be made by new users or reoccurring users
 		if random.random() <= CHANCE_FROM_NEW_USER:
 			# Simple generation of new instance
@@ -64,12 +77,12 @@ def simulation_episode(
 				continue
 			user_i = random.randint(0, n_users - 1)
 			user = df_users[df_users["isStaff"] == False].iloc[user_i].to_dict()
-
+		
 		# Pick variant and generate city
 		# todo: not duplicating City Districts
 		variant_city = random.choice(list(entities_conf["City"].get("variants", {}).keys()))
 		new_city = add_instance_to_population(df_city, entities_conf["City"], variant=variant_city)
-
+		
 		# Generate new address in the city, for the estate, request
 		new_address = add_instance_to_population(
 			df_address,
@@ -93,7 +106,7 @@ def simulation_episode(
 		# Note: Not the best way to do it, but it works
 		# Take the last record in DF and set its date to today's simulation day
 		df_requests.loc[len(df_requests) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d %H:%M")
-
+		
 		# Read newly created Request, if picked that agent was created, generate corresponding M2M record
 		if new_req['isAgentAssigned']:
 			# Picking random Agent for assigning the estate
@@ -104,7 +117,7 @@ def simulation_episode(
 				entities_conf["RequestAgent"],
 				ref_entities={"Agent": agent, "Request": new_req}
 			)
-
+		
 		# At the end of creating the Request User can fill out the Form
 		if random.random() <= CHANCE_TO_FILL_THE_FORM:
 			# Note: Not realistic but good enough
@@ -124,7 +137,7 @@ def simulation_episode(
 			h = dt.strptime(df_form.at[df_form.index[-1], "RequestStartTime"], "%H:%M").hour
 			m = dt.strptime(df_form.at[df_form.index[-1], "RequestStartTime"], "%H:%M").minute
 			df_requests.at[df_requests.index[-1], "CreatedAt"] = today_date.replace(hour=h, minute=m).strftime("%Y-%m-%d %H:%M")
-
+	
 	for index, row in df_req_agent[df_req_agent["Status"] == "Pending"].iterrows():
 		if random.random() <= CHANCE_AGENT_ACCEPTS_ASSIGNED_REQ:
 			df_req_agent.loc[index, "Status"] = "Accepted"
@@ -133,9 +146,26 @@ def simulation_episode(
 	
 	# todo: un-comment
 	for index, row in df_agents.iterrows():
-		if random.random() <= CHANCE_AGENT_GETS_A_PROMOTION:
-			df_agents.loc[index, "CommissionFee"] += 0.1
-
+		if random.random() <= CHANCE_AGENT_GETS_A_PROMOTION and df_agents.loc[index, "CommissionFee"] < PROMOTION_CAP:
+			df_agents.loc[index, "CommissionFee"] += PROMOTION_RATE
+		if random.random() <= CHANCE_AGENT_GETS_A_DEMOTION and df_agents.loc[index, "CommissionFee"] > DEMOTION_CAP:
+			df_agents.loc[index, "CommissionFee"] += DEMOTION_RATE
+		
+		# Return from vacation
+		if (df_agents.loc[index, "AvailabilityStatus"] == "On Leave" and
+					random.random() <= CHANCE_AGENT_RETURNS_FROM_VACATION):
+			df_agents.loc[index, "AvailabilityStatus"] = "Available"
+		# Go on vacation
+		if (df_agents.loc[index, "AvailabilityStatus"] == "Available" and
+					random.random() <= CHANCE_AGENT_GOES_ON_VACATION):
+			df_agents.loc[index, "AvailabilityStatus"] = "On Leave"
+	
+	n_new_agents = int(stats.poisson.ppf(random.random(), mu=HIRE_AGENTS_PER_YEAR_LAMBDA / 356))
+	for _ in range(n_new_agents):
+		new_agent = add_instance_to_population(df_users, entities_conf["User"], variant="Agent")
+		df_users.loc[len(df_users) - 1, "CreatedAt"] = today_date.strftime("%Y-%m-%d")
+		add_instance_to_population(df_agents, entities_conf["Agent"], ref_entities={"User": new_agent})
+		
 
 def main():
 	# todo: prob to function
@@ -147,12 +177,12 @@ def main():
 			print(exc)
 		except KeyError as exc:
 			print(exc)
-
+	
 	# todo: to function
 	if entities_conf is None:
 		print("No entities configuration")
 		return
-
+	
 	if READ_EXISTING_FILES:
 		df_users = pd.read_csv(entities_conf["User"]["path"])
 		df_agents = pd.read_csv(entities_conf["Agent"]["path"])
@@ -171,13 +201,13 @@ def main():
 		df_city = pd.DataFrame(columns=entities_conf["City"]["fields"].keys())
 		df_address = pd.DataFrame(columns=entities_conf["Address"]["fields"].keys())
 		df_req_agent = pd.DataFrame(columns=entities_conf["RequestAgent"]["fields"].keys())
-
+	
 	# Add initial Agents
 	if not READ_EXISTING_FILES:
 		for i in range(N_INITIAL_AGENTS):
 			new_agent = add_instance_to_population(df_users, entities_conf["User"], variant="Agent")
 			add_instance_to_population(df_agents, entities_conf["Agent"], ref_entities={"User": new_agent})
-
+	
 	# for N days
 	today_date = datetime.datetime.strptime(STARTING_DATE, "%Y-%m-%d")
 	for i in range(N_EPISODES):
@@ -188,7 +218,7 @@ def main():
 		today_date = today_date + datetime.timedelta(days=1)
 		print("Next Date will be:", today_date)
 	#   ? some new requests
-
+	
 	df_users.to_csv(entities_conf["User"]["path"], index=False)
 	df_agents.to_csv(entities_conf["Agent"]["path"], index=False)
 	df_estates.to_csv(entities_conf["Estate"]["path"], index=False)
